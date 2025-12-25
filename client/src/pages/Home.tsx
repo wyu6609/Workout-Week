@@ -3,11 +3,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dumbbell, Activity, Calendar, Clock, ChevronRight, Loader2, Target, HeartPulse } from "lucide-react";
-import { userPreferencesSchema, type UserPreferences, type WorkoutPlan } from "@shared/schema";
+import { userPreferencesSchema, type UserPreferences } from "@shared/schema";
 import { useGeneratePlan } from "@/hooks/use-workout";
 import { PlanResults } from "@/components/PlanResults";
-import { UserMenu } from "@/components/UserMenu";
-import { SavedWorkoutsDialog } from "@/components/SavedWorkoutsDialog";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -20,8 +18,6 @@ import { Input } from "@/components/ui/input";
 
 export default function Home() {
   const [showResults, setShowResults] = useState(false);
-  const [savedDialogOpen, setSavedDialogOpen] = useState(false);
-  const [loadedPlan, setLoadedPlan] = useState<WorkoutPlan | null>(null);
   const generateMutation = useGeneratePlan();
 
   const form = useForm<UserPreferences>({
@@ -41,7 +37,6 @@ export default function Home() {
   const onSubmit = (data: UserPreferences) => {
     generateMutation.mutate(data, {
       onSuccess: () => {
-        setLoadedPlan(null);
         setShowResults(true);
       },
     });
@@ -49,16 +44,8 @@ export default function Home() {
 
   const handleReset = () => {
     setShowResults(false);
-    setLoadedPlan(null);
     form.reset();
   };
-
-  const handleLoadWorkout = (plan: WorkoutPlan) => {
-    setLoadedPlan(plan);
-    setShowResults(true);
-  };
-
-  const currentPlan = loadedPlan || generateMutation.data;
 
   return (
     <div className="min-h-screen bg-background text-foreground font-body selection:bg-primary/20">
@@ -68,11 +55,7 @@ export default function Home() {
       </div>
 
       <div className="container max-w-7xl mx-auto px-4 py-8 md:py-12">
-        <header className="mb-12 text-center space-y-4 relative">
-          <div className="absolute top-0 right-0">
-            <UserMenu onViewSaved={() => setSavedDialogOpen(true)} />
-          </div>
-          
+        <header className="mb-12 text-center space-y-4">
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -100,14 +83,14 @@ export default function Home() {
         </header>
 
         <AnimatePresence mode="wait">
-          {showResults && currentPlan ? (
+          {showResults && generateMutation.data ? (
             <motion.div
               key="results"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <PlanResults plan={currentPlan} onReset={handleReset} />
+              <PlanResults plan={generateMutation.data} onReset={handleReset} />
             </motion.div>
           ) : (
             <motion.div
@@ -411,11 +394,6 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
-      <SavedWorkoutsDialog
-        open={savedDialogOpen}
-        onOpenChange={setSavedDialogOpen}
-        onLoadWorkout={handleLoadWorkout}
-      />
     </div>
   );
 }
