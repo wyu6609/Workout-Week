@@ -11,7 +11,7 @@ import {
   Info,
   Calendar
 } from "lucide-react";
-import type { GeneratePlanResponse, DayPlan, Exercise } from "@shared/routes";
+import type { GeneratePlanResponse, DayPlan, Exercise, WorkoutPlan } from "@shared/routes";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 interface PlanResultsProps {
-  plan: GeneratePlanResponse;
+  plan: WorkoutPlan;
   onReset: () => void;
 }
 
@@ -92,13 +92,13 @@ export function PlanResults({ plan, onReset }: PlanResultsProps) {
           </div>
 
           <div className="flex gap-3">
-            <Button variant="outline" size="icon" onClick={handleCopy} title="Copy JSON">
+            <Button variant="outline" size="icon" onClick={handleCopy} title="Copy JSON" data-testid="button-copy-json">
               <Copy className="w-4 h-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={handleDownload} title="Download JSON">
+            <Button variant="outline" size="icon" onClick={handleDownload} title="Download JSON" data-testid="button-download-json">
               <Download className="w-4 h-4" />
             </Button>
-            <Button onClick={onReset} className="gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40">
+            <Button onClick={onReset} className="gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40" data-testid="button-new-plan">
               <RotateCcw className="w-4 h-4" />
               New Plan
             </Button>
@@ -113,7 +113,7 @@ export function PlanResults({ plan, onReset }: PlanResultsProps) {
         animate="show"
         className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6"
       >
-        {plan.days.map((day, idx) => (
+        {plan.days.map((day: any, idx: number) => (
           <motion.div variants={item} key={idx}>
             <DayCard day={day} />
           </motion.div>
@@ -158,7 +158,7 @@ function DayCard({ day }: { day: DayPlan }) {
       <div className="p-6 space-y-6 flex-1 overflow-y-auto max-h-[600px] hide-scrollbar">
         {/* Warmup */}
         <Section title="Warmup" color="text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400">
-          {day.warmup.map((w, i) => (
+          {day.warmup.map((w: any, i: number) => (
             <div key={i} className="text-sm py-1 border-l-2 border-yellow-200 pl-3">
               <div className="font-medium">{w.name}</div>
               <div className="text-muted-foreground text-xs">{w.time_seconds}s • {w.cues.join(", ")}</div>
@@ -167,7 +167,7 @@ function DayCard({ day }: { day: DayPlan }) {
         </Section>
 
         {/* Workout Blocks */}
-        {day.workout.map((block, i) => (
+        {day.workout.map((block: any, i: number) => (
           <div key={i} className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="font-bold text-foreground flex items-center gap-2">
@@ -182,7 +182,7 @@ function DayCard({ day }: { day: DayPlan }) {
             </div>
             
             <Accordion type="single" collapsible className="w-full">
-              {block.exercises.map((ex, j) => (
+              {block.exercises.map((ex: Exercise, j: number) => (
                 <ExerciseItem key={j} exercise={ex} />
               ))}
             </Accordion>
@@ -191,7 +191,7 @@ function DayCard({ day }: { day: DayPlan }) {
 
         {/* Cooldown */}
         <Section title="Cooldown" color="text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400">
-          {day.cooldown.map((c, i) => (
+          {day.cooldown.map((c: any, i: number) => (
             <div key={i} className="text-sm py-1 border-l-2 border-blue-200 pl-3">
               <div className="font-medium">{c.name}</div>
               <div className="text-muted-foreground text-xs">{c.time_seconds}s • {c.cues.join(", ")}</div>
@@ -230,7 +230,7 @@ function ExerciseItem({ exercise }: { exercise: Exercise }) {
             <div>
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cues</span>
               <ul className="list-disc list-inside mt-1 text-muted-foreground/90 space-y-0.5">
-                {exercise.form_cues.map((cue, i) => (
+                {exercise.form_cues.map((cue: string, i: number) => (
                   <li key={i}>{cue}</li>
                 ))}
               </ul>

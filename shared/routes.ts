@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { userPreferencesSchema, workoutPlanSchema } from './schema';
+import { userPreferencesSchema, workoutPlanSchema, type DayPlan, type Exercise } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -28,3 +28,4 @@ export const api = {
 
 export type GeneratePlanInput = z.infer<typeof userPreferencesSchema>;
 export type GeneratePlanResponse = z.infer<typeof workoutPlanSchema>;
+export type { DayPlan, Exercise, WorkoutPlan };

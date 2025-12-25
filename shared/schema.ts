@@ -39,6 +39,7 @@ export const exerciseSchema = z.object({
     harder: z.string(),
     knee_friendly: z.string(),
     wrist_friendly: z.string(),
+    low_impact: z.string().optional(),
   }),
 });
 
@@ -80,6 +81,20 @@ export type Exercise = z.infer<typeof exerciseSchema>;
 export type DayPlan = z.infer<typeof dayPlanSchema>;
 
 // === DB SCHEMA (Optional, for history if needed later) ===
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+});
+
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
+});
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;
+
 export const plans = pgTable("plans", {
   id: serial("id").primaryKey(),
   userData: jsonb("user_data").notNull(),

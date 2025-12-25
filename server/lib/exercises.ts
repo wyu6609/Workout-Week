@@ -13,6 +13,7 @@ export interface ExerciseDef {
     harder?: string;
     knee_friendly?: string;
     wrist_friendly?: string;
+    low_impact?: string;
   };
 }
 

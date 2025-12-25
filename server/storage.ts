@@ -1,4 +1,4 @@
-import { users, type User, type InsertUser } from "@shared/schema";
+import { type User, type InsertUser } from "@shared/schema";
 
 // This interface is minimal as we are primarily stateless for this MVP
 export interface IStorage {
