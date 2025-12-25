@@ -1,9 +1,9 @@
-import { pgTable, text, serial, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, varchar, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// We can store generated plans if we want, or just keep them ephemeral.
-// For now, defining the types for the generation request and response is most critical.
+// Re-export auth models
+export * from "./models/auth";
 
 // === FORM INPUT SCHEMA ===
 export const userPreferencesSchema = z.object({
@@ -12,7 +12,7 @@ export const userPreferencesSchema = z.object({
   days_per_week: z.number().min(3).max(7),
   minutes_per_session: z.number().min(15).max(60),
   cardio_preference: z.enum(["none", "low_impact", "hiit_ok", "running_ok"]),
-  constraints: z.string().optional(), // Free text like "knee pain"
+  constraints: z.string().optional(),
   focus: z.enum(["full_body", "upper", "lower", "core", "glutes", "posture"]),
   household_items_allowed: z.boolean(),
   baselines: z.object({
@@ -29,7 +29,7 @@ export type UserPreferences = z.infer<typeof userPreferencesSchema>;
 export const exerciseSchema = z.object({
   name: z.string(),
   sets: z.number(),
-  reps: z.string(), // string to allow "12-15" or "AMRAP"
+  reps: z.string(),
   rest_seconds: z.number(),
   tempo: z.string(),
   rpe: z.number(),
@@ -56,7 +56,7 @@ export const warmupCooldownSchema = z.object({
 });
 
 export const dayPlanSchema = z.object({
-  day: z.string(), // e.g., "Monday" or "Day 1"
+  day: z.string(),
   focus: z.string(),
   duration_minutes: z.number(),
   warmup: z.array(warmupCooldownSchema),
@@ -80,28 +80,19 @@ export type WorkoutPlan = z.infer<typeof workoutPlanSchema>;
 export type Exercise = z.infer<typeof exerciseSchema>;
 export type DayPlan = z.infer<typeof dayPlanSchema>;
 
-// === DB SCHEMA (Optional, for history if needed later) ===
-export const users = pgTable("users", {
+// === SAVED WORKOUTS TABLE ===
+export const savedWorkouts = pgTable("saved_workouts", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  userId: varchar("user_id").notNull(),
+  planName: text("plan_name").notNull(),
+  planData: jsonb("plan_data").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertSavedWorkoutSchema = createInsertSchema(savedWorkouts).omit({
+  id: true,
+  createdAt: true,
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-
-export const plans = pgTable("plans", {
-  id: serial("id").primaryKey(),
-  userData: jsonb("user_data").notNull(),
-  generatedPlan: jsonb("generated_plan").notNull(),
-  createdAt: text("created_at").notNull().default("NOW()"),
-});
-
-export const insertPlanSchema = createInsertSchema(plans);
-export type InsertPlan = z.infer<typeof insertPlanSchema>;
-export type Plan = typeof plans.$inferSelect;
+export type InsertSavedWorkout = z.infer<typeof insertSavedWorkoutSchema>;
+export type SavedWorkout = typeof savedWorkouts.$inferSelect;

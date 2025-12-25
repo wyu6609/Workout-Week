@@ -9,7 +9,9 @@ import {
   ChevronDown, 
   Play, 
   Info,
-  Calendar
+  Calendar,
+  Heart,
+  Loader2
 } from "lucide-react";
 import type { GeneratePlanResponse, DayPlan, Exercise, WorkoutPlan } from "@shared/routes";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,10 @@ import {
   AccordionTrigger 
 } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { isUnauthorizedError } from "@/lib/auth-utils";
 
 interface PlanResultsProps {
   plan: WorkoutPlan;
@@ -30,6 +36,26 @@ interface PlanResultsProps {
 
 export function PlanResults({ plan, onReset }: PlanResultsProps) {
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/saved-workouts", { planData: plan });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/saved-workouts"] });
+      toast({ title: "Workout saved!", description: "You can access it anytime from your saved workouts." });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({ title: "Session expired", description: "Please sign in again.", variant: "destructive" });
+        setTimeout(() => { window.location.href = "/api/login"; }, 500);
+        return;
+      }
+      toast({ title: "Error", description: error.message || "Failed to save workout.", variant: "destructive" });
+    },
+  });
 
   const handleCopy = () => {
     navigator.clipboard.writeText(JSON.stringify(plan, null, 2));
@@ -92,6 +118,22 @@ export function PlanResults({ plan, onReset }: PlanResultsProps) {
           </div>
 
           <div className="flex gap-3">
+            {isAuthenticated && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => saveMutation.mutate()}
+                disabled={saveMutation.isPending}
+                title="Save to favorites"
+                data-testid="button-save-workout"
+              >
+                {saveMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Heart className="w-4 h-4" />
+                )}
+              </Button>
+            )}
             <Button variant="outline" size="icon" onClick={handleCopy} title="Copy JSON" data-testid="button-copy-json">
               <Copy className="w-4 h-4" />
             </Button>

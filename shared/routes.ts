@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { userPreferencesSchema, workoutPlanSchema, type DayPlan, type Exercise } from './schema';
+import { userPreferencesSchema, workoutPlanSchema } from './schema';
+import type { DayPlan, Exercise, WorkoutPlan } from './schema';
 
 export const errorSchemas = {
   validation: z.object({

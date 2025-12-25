@@ -3,11 +3,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dumbbell, Activity, Calendar, Clock, ChevronRight, Loader2, Target, HeartPulse } from "lucide-react";
-import { userPreferencesSchema, type UserPreferences } from "@shared/schema";
+import { userPreferencesSchema, type UserPreferences, type WorkoutPlan } from "@shared/schema";
 import { useGeneratePlan } from "@/hooks/use-workout";
 import { PlanResults } from "@/components/PlanResults";
+import { UserMenu } from "@/components/UserMenu";
+import { SavedWorkoutsDialog } from "@/components/SavedWorkoutsDialog";
 
-// Components
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,6 +20,8 @@ import { Input } from "@/components/ui/input";
 
 export default function Home() {
   const [showResults, setShowResults] = useState(false);
+  const [savedDialogOpen, setSavedDialogOpen] = useState(false);
+  const [loadedPlan, setLoadedPlan] = useState<WorkoutPlan | null>(null);
   const generateMutation = useGeneratePlan();
 
   const form = useForm<UserPreferences>({
@@ -37,26 +40,39 @@ export default function Home() {
 
   const onSubmit = (data: UserPreferences) => {
     generateMutation.mutate(data, {
-      onSuccess: () => setShowResults(true),
+      onSuccess: () => {
+        setLoadedPlan(null);
+        setShowResults(true);
+      },
     });
   };
 
   const handleReset = () => {
     setShowResults(false);
+    setLoadedPlan(null);
     form.reset();
   };
 
+  const handleLoadWorkout = (plan: WorkoutPlan) => {
+    setLoadedPlan(plan);
+    setShowResults(true);
+  };
+
+  const currentPlan = loadedPlan || generateMutation.data;
+
   return (
     <div className="min-h-screen bg-background text-foreground font-body selection:bg-primary/20">
-      {/* Decorative Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
       </div>
 
       <div className="container max-w-7xl mx-auto px-4 py-8 md:py-12">
-        {/* Header */}
-        <header className="mb-12 text-center space-y-4">
+        <header className="mb-12 text-center space-y-4 relative">
+          <div className="absolute top-0 right-0">
+            <UserMenu onViewSaved={() => setSavedDialogOpen(true)} />
+          </div>
+          
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -84,14 +100,14 @@ export default function Home() {
         </header>
 
         <AnimatePresence mode="wait">
-          {showResults && generateMutation.data ? (
+          {showResults && currentPlan ? (
             <motion.div
               key="results"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <PlanResults plan={generateMutation.data} onReset={handleReset} />
+              <PlanResults plan={currentPlan} onReset={handleReset} />
             </motion.div>
           ) : (
             <motion.div
@@ -106,7 +122,6 @@ export default function Home() {
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                       
-                      {/* Section 1: Goals & Experience */}
                       <div className="space-y-6">
                         <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border/50">
                           <Target className="w-5 h-5 text-primary" />
@@ -122,7 +137,7 @@ export default function Home() {
                                 <FormLabel>Primary Goal</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                   <FormControl>
-                                    <SelectTrigger className="h-12 rounded-xl">
+                                    <SelectTrigger className="h-12 rounded-xl" data-testid="select-goal">
                                       <SelectValue placeholder="Select a goal" />
                                     </SelectTrigger>
                                   </FormControl>
@@ -147,7 +162,7 @@ export default function Home() {
                                 <FormLabel>Experience Level</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                   <FormControl>
-                                    <SelectTrigger className="h-12 rounded-xl">
+                                    <SelectTrigger className="h-12 rounded-xl" data-testid="select-experience">
                                       <SelectValue placeholder="Select level" />
                                     </SelectTrigger>
                                   </FormControl>
@@ -171,7 +186,7 @@ export default function Home() {
                               <FormLabel>Focus Area</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                  <SelectTrigger className="h-12 rounded-xl">
+                                  <SelectTrigger className="h-12 rounded-xl" data-testid="select-focus">
                                     <SelectValue placeholder="Select focus" />
                                   </SelectTrigger>
                                 </FormControl>
@@ -190,7 +205,6 @@ export default function Home() {
                         />
                       </div>
 
-                      {/* Section 2: Logistics */}
                       <div className="space-y-6 pt-2">
                         <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border/50">
                           <Calendar className="w-5 h-5 text-primary" />
@@ -215,6 +229,7 @@ export default function Home() {
                                     defaultValue={[field.value]}
                                     onValueChange={(vals) => field.onChange(vals[0])}
                                     className="py-4"
+                                    data-testid="slider-days"
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -239,6 +254,7 @@ export default function Home() {
                                     defaultValue={[field.value]}
                                     onValueChange={(vals) => field.onChange(vals[0])}
                                     className="py-4"
+                                    data-testid="slider-minutes"
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -248,7 +264,6 @@ export default function Home() {
                         </div>
                       </div>
 
-                      {/* Section 3: Preferences */}
                       <div className="space-y-6 pt-2">
                         <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border/50">
                           <HeartPulse className="w-5 h-5 text-primary" />
@@ -264,7 +279,7 @@ export default function Home() {
                                 <FormLabel>Cardio Type</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                   <FormControl>
-                                    <SelectTrigger className="h-12 rounded-xl">
+                                    <SelectTrigger className="h-12 rounded-xl" data-testid="select-cardio">
                                       <SelectValue placeholder="Select cardio type" />
                                     </SelectTrigger>
                                   </FormControl>
@@ -295,6 +310,7 @@ export default function Home() {
                                   <Switch
                                     checked={field.value}
                                     onCheckedChange={field.onChange}
+                                    data-testid="switch-household"
                                   />
                                 </FormControl>
                               </FormItem>
@@ -312,6 +328,7 @@ export default function Home() {
                                 <Textarea
                                   placeholder="e.g., Lower back pain, bad knees, no jumping..."
                                   className="resize-none rounded-xl min-h-[80px]"
+                                  data-testid="textarea-constraints"
                                   {...field}
                                 />
                               </FormControl>
@@ -321,7 +338,6 @@ export default function Home() {
                         />
                       </div>
                       
-                      {/* Optional: Baselines */}
                       <div className="space-y-4 pt-4 border-t border-border/50">
                          <div className="flex items-center gap-2 text-muted-foreground">
                             <Activity className="w-4 h-4" />
@@ -335,7 +351,7 @@ export default function Home() {
                               <FormItem>
                                 <FormLabel className="text-xs">Max Pushups</FormLabel>
                                 <FormControl>
-                                  <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || undefined)} className="h-10" placeholder="0" />
+                                  <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || undefined)} className="h-10" placeholder="0" data-testid="input-pushups" />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -347,7 +363,7 @@ export default function Home() {
                               <FormItem>
                                 <FormLabel className="text-xs">Max Squats</FormLabel>
                                 <FormControl>
-                                  <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || undefined)} className="h-10" placeholder="0" />
+                                  <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || undefined)} className="h-10" placeholder="0" data-testid="input-squats" />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -359,7 +375,7 @@ export default function Home() {
                               <FormItem>
                                 <FormLabel className="text-xs">Max Plank (sec)</FormLabel>
                                 <FormControl>
-                                  <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || undefined)} className="h-10" placeholder="0" />
+                                  <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || undefined)} className="h-10" placeholder="0" data-testid="input-plank" />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -372,6 +388,7 @@ export default function Home() {
                         size="lg"
                         className="w-full text-lg h-14 rounded-xl font-bold bg-gradient-to-r from-primary to-primary/80 hover:to-primary hover:scale-[1.01] transition-all shadow-lg shadow-primary/25"
                         disabled={generateMutation.isPending}
+                        data-testid="button-generate"
                       >
                         {generateMutation.isPending ? (
                           <>
@@ -393,6 +410,12 @@ export default function Home() {
           )}
         </AnimatePresence>
       </div>
+
+      <SavedWorkoutsDialog
+        open={savedDialogOpen}
+        onOpenChange={setSavedDialogOpen}
+        onLoadWorkout={handleLoadWorkout}
+      />
     </div>
   );
 }
