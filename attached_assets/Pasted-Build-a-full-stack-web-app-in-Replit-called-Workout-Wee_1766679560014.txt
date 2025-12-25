@@ -1,0 +1,95 @@
+Build a full-stack web app in Replit called “Workout Week Generator”.
+
+Tech:
+- Frontend: React + Vite + TypeScript
+- Backend: Node.js + Express (TypeScript)
+- Styling: simple CSS (no tailwind required)
+- One repo with /client and /server folders
+- Use a single “dev” command that runs both client + server concurrently.
+
+Core features:
+1) A form where user selects:
+   - goal: fat_loss | muscle_gain | strength | endurance | mobility
+   - experience: beginner | intermediate | advanced
+   - days_per_week: 3–7
+   - minutes_per_session: 15–60
+   - cardio_preference: none | low_impact | hiit_ok | running_ok
+   - constraints: free-text (e.g. knee pain, wrist pain)
+   - focus: full_body | upper | lower | core | glutes | posture
+   - household_items_allowed: boolean
+   - baseline test inputs:
+       pushups_max (optional number)
+       squats_max (optional number)
+       plank_seconds (optional number)
+
+2) On submit, call backend POST /api/generate-plan with the form data.
+
+3) Backend generates a workout plan WITHOUT calling external APIs:
+   - Use deterministic logic + templates (hardcode exercise library).
+   - Output JSON following this schema:
+     {
+       plan_name: string,
+       overview: { goal: string, weekly_structure: string, intensity_guidance: string },
+       days: [
+         {
+           day: string,
+           focus: string,
+           duration_minutes: number,
+           warmup: [{ name: string, time_seconds: number, cues: string[] }],
+           workout: [
+             {
+               block_name: string,
+               format: "sets_reps" | "emom" | "amrap" | "circuit" | "intervals",
+               exercises: [
+                 {
+                   name: string,
+                   sets: number,
+                   reps: string,
+                   rest_seconds: number,
+                   tempo: string,
+                   rpe: number,
+                   form_cues: string[],
+                   substitutions: {
+                     easier: string,
+                     harder: string,
+                     knee_friendly: string,
+                     wrist_friendly: string
+                   }
+                 }
+               ]
+             }
+           ],
+           cooldown: [{ name: string, time_seconds: number, cues: string[] }]
+         }
+       ],
+       next_week_progression: string[]
+     }
+
+Generation rules:
+- No equipment required by default. If household_items_allowed=true, you may use chair/sofa/wall/towel/backpack.
+- Include warm-up (3–6 min), main work, cooldown (2–4 min).
+- Use progressive overload across the week (add reps/sets, reduce rest, harder variation, or tempo).
+- Default main work at RPE 7–8, scale down if beginner or constraints mention pain.
+- Include substitutions for each exercise (easier/harder/knee/wrist).
+- If days_per_week >= 5, include 1 recovery/rest day.
+
+4) Frontend renders the returned plan as:
+   - A weekly list view (Day cards)
+   - Each card shows warmup, blocks, exercises, cooldown
+   - Button: “Copy plan as JSON”
+   - Button: “Download plan as .json” (client-side)
+
+Engineering requirements:
+- Provide a clean exercise library file on the backend (arrays/objects) grouped by movement patterns:
+  push, pull (if household allowed), squat, hinge, core, cardio
+- Input validation with zod on backend.
+- Good error messages to UI.
+- Add README with how to run.
+
+Deliverables:
+- Working app in Replit with run button
+- File structure:
+  /client (Vite React TS)
+  /server (Express TS)
+  root package.json using concurrently to run both
+- Include sample plan generation for each goal to confirm it works.
